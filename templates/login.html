@@ -1,17 +1,27 @@
-<html>
+<!doctype html>
+<html lang="id">
   <head>
-    <title>Laman login</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Masuk</title>
   </head>
-
   <body>
-    <h1>Laman Login</h1>
-    
-    <form method="POST">
-      Email : <input name="email" type="email" placeholder="Masukkan email anda" required><br><br>
-      Sandi : <input name="sandi" type="password" placeholder="Masukkan kata sandi anda" required><br><br>
-      <input value="Masuk!" type="submit">
+    <h1>Masuk</h1>
+
+    <form method="post">
+      <p>
+        <label for="email">Email</label><br>
+        <input id="email" name="email" type="email" placeholder="Masukkan email Anda" required>
+      </p>
+      <p>
+        <label for="sandi">Sandi</label><br>
+        <input id="sandi" name="sandi" type="password" placeholder="Masukkan kata sandi Anda" required>
+      </p>
+      <button type="submit">Masuk</button>
     </form>
 
-    {{ pesan }}
+    {% if pesan %}
+      <p>{{ pesan }}</p>
+    {% endif %}
   </body>
 </html>

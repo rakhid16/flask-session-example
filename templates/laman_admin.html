@@ -1,13 +1,15 @@
-<html>
+<!doctype html>
+<html lang="id">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard Admin</title>
   </head>
-
   <body>
-    <h1>Selamat datang {{ id }}!</h1>
-    Data <i>Users</i> :
-    
-    <table border="1px">
+    <h1>Selamat datang, {{ id }}!</h1>
+
+    <h2>Data pengguna</h2>
+    <table border="1">
       <thead>
         <tr>
           <th>Email</th>
@@ -16,25 +18,39 @@
           <th>Sandi</th>
         </tr>
       </thead>
-      <tbody> {% for elemen in data %}
-        <tr>
-          <td>{{ elemen['email'] }}</td>
-          <td>{{ elemen['username'] }}</td>
-          <td>{{ elemen['alamat'] }}</td>
-          <td>{{ elemen['sandi'] }}</td>
-        </tr> {% endfor %}
+      <tbody>
+        {% for user in data %}
+          <tr>
+            <td>{{ user.email }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.alamat }}</td>
+            <td>{{ user.sandi }}</td>
+          </tr>
+        {% endfor %}
       </tbody>
-    </table><br>
+    </table>
 
-    Tambah akun baru :<br>
-    <form method="POST">
-      Email : <input name="email" type="email" placeholder="Masukkan email anda" required><br>
-      Username : <input name="usernm" type="text" placeholder="Masukkan kata username anda" required><br>
-      Alamat : <input name="alamat" type="text" placeholder="Masukkan alamat anda" required><br>
-      Sandi : <input name="sandi" type="text" placeholder="Masukkan kata sandi anda" required><br><br>
-      <input value="Tambahkan!" type="submit">
+    <h2>Tambah akun baru</h2>
+    <form method="post">
+      <p>
+        <label for="email">Email</label><br>
+        <input id="email" name="email" type="email" placeholder="Masukkan email" required>
+      </p>
+      <p>
+        <label for="username">Username</label><br>
+        <input id="username" name="usernm" type="text" placeholder="Masukkan username" required>
+      </p>
+      <p>
+        <label for="alamat">Alamat</label><br>
+        <input id="alamat" name="alamat" type="text" placeholder="Masukkan alamat" required>
+      </p>
+      <p>
+        <label for="sandi">Sandi</label><br>
+        <input id="sandi" name="sandi" type="password" placeholder="Masukkan kata sandi" required>
+      </p>
+      <button type="submit">Tambahkan</button>
     </form>
 
-    <a href="{{ url_for('logout') }}">Keluar</a>
+    <p><a href="{{ url_for('logout') }}">Keluar</a></p>
   </body>
 </html>

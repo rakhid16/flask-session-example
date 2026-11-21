@@ -1,19 +1,33 @@
-<html>
+<!doctype html>
+<html lang="id">
   <head>
-    <title>Edit Data User</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Data Pengguna</title>
   </head>
-
   <body>
-    <h1>Edit data {{ data['username'] }}</h1>
-    
-    <form method="POST">
-      Email : <input name="email" type="text" value="{{ data['email'] }}" required><br>
-      Username : <input name="usernm" type="text" value="{{ data['username'] }}" required><br>
-      Alamat : <input name="alamat" type="text" value="{{ data['alamat'] }}" required><br>
-      Sandi : <input name="sandi" type="text" value="{{ data['sandi'] }}" required><br><br>
-      <input type="submit" value="Simpan Perubahan!">
-    </form><br>
+    <h1>Edit data {{ data.username }}</h1>
 
-    <a href="{{ url_for('user', id = data['_id']) }}">Kembali</a>
+    <form method="post">
+      <p>
+        <label for="email">Email</label><br>
+        <input id="email" name="email" type="email" value="{{ data.email }}" required>
+      </p>
+      <p>
+        <label for="username">Username</label><br>
+        <input id="username" name="usernm" type="text" value="{{ data.username }}" required>
+      </p>
+      <p>
+        <label for="alamat">Alamat</label><br>
+        <input id="alamat" name="alamat" type="text" value="{{ data.alamat }}" required>
+      </p>
+      <p>
+        <label for="sandi">Sandi</label><br>
+        <input id="sandi" name="sandi" type="password" value="{{ data.sandi }}" required>
+      </p>
+      <button type="submit">Simpan perubahan</button>
+    </form>
+
+    <p><a href="{{ url_for('user', id=data._id) }}">Kembali</a></p>
   </body>
 </html>

@@ -1,94 +1,139 @@
-from random import choice
-from string import digits, ascii_uppercase
+import os
+import secrets
+import string
 
+from flask import Flask, redirect, render_template, request, session, url_for
 from pymongo import MongoClient
-from flask import Flask, session, request, render_template, url_for, redirect
 
-client = MongoClient("rahasia")
-col_admin, col_users = client.contoh.admin, client.contoh.users
+
+mongo_client = MongoClient(os.getenv("MONGO_URI", "rahasia"))
+database = mongo_client.contoh
+admin_collection = database.admin
+user_collection = database.users
 
 app = Flask(__name__)
-app.secret_key = "rahasia"
+app.secret_key = os.getenv("SECRET_KEY", "rahasia")
 
-@app.route('/', methods=['GET', 'POST'])
+
+def get_account_id():
+    return session.get("akun")
+
+
+def is_current_account(account_id):
+    return account_id is not None and account_id == get_account_id()
+
+
+@app.route("/", methods=["GET", "POST"])
 def login():
-  if request.method == 'POST':
-    if "admin" in request.form['email'] and col_admin.find_one({'email' : request.form['email'], 'sandi' : request.form['sandi']}) is not None:
-      session['akun'] = col_admin.find_one({'email' : request.form['email'], 'sandi' : request.form['sandi']})['_id']
-      return redirect(url_for('admin', id = session['akun']))
+    account_id = get_account_id()
+    if account_id:
+        endpoint = "admin" if "admin" in account_id else "user"
+        return redirect(url_for(endpoint, id=account_id))
 
-    elif col_users.find_one({'email' : request.form['email'], 'sandi' : request.form['sandi']}) is not None:
-      session['akun'] = col_users.find_one({'email' : request.form['email'], 'sandi' : request.form['sandi']})['_id']
-      return redirect(url_for('user', id = session['akun']))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("sandi", "")
 
-    else:
-      return render_template('login.html', pesan = 'email atau kata sandi anda salah!1!')
+        admin = None
+        if "admin" in email:
+            admin = admin_collection.find_one({"email": email, "sandi": password})
 
-  elif session and "admin" in session['akun']:
-    return redirect(url_for('admin', id = session['akun']))
+        if admin is not None:
+            session["akun"] = admin["_id"]
+            return redirect(url_for("admin", id=admin["_id"]))
 
-  elif session and "admin" not in session['akun']:
-    return redirect(url_for('user', id = session['akun']))
-  
-  else:
-    return render_template('login.html')
+        user = user_collection.find_one({"email": email, "sandi": password})
+        if user is not None:
+            session["akun"] = user["_id"]
+            return redirect(url_for("user", id=user["_id"]))
 
-@app.route('/admin/<id>', methods=['GET', 'POST'])
+        return render_template(
+            "login.html",
+            pesan="Email atau kata sandi Anda salah.",
+        )
+
+    return render_template("login.html")
+
+
+@app.route("/admin/<id>", methods=["GET", "POST"])
 def admin(id):
-  if session and id == session['akun']:
-    users_data = [data for data in col_users.find()]
+    if not is_current_account(id):
+        return redirect(url_for("login"))
 
-    if request.method == 'POST':
-      col_users.insert_one({"_id" : ''.join(choice(ascii_uppercase + digits) for _ in range(8)),
-                            "email" : request.form['email'],
-                            "sandi" : request.form['sandi'],
-                            "username" : request.form['usernm'],
-                            "alamat" : request.form['alamat']})
+    if request.method == "POST":
+        user_collection.insert_one(
+            {
+                "_id": "".join(
+                    secrets.choice(string.ascii_uppercase + string.digits)
+                    for _ in range(8)
+                ),
+                "email": request.form.get("email", "").strip(),
+                "sandi": request.form.get("sandi", ""),
+                "username": request.form.get("usernm", "").strip(),
+                "alamat": request.form.get("alamat", "").strip(),
+            }
+        )
+        return redirect(url_for("admin", id=id))
 
-      return redirect(url_for('admin', id = id))
+    users_data = list(user_collection.find())
+    return render_template("laman_admin.html", id=id, data=users_data)
 
-    return render_template('laman_admin.html', id =id, data = users_data)
-  else:
-    return redirect('/')
 
-@app.route('/user/<id>')
+@app.route("/user/<id>")
 def user(id):
-  if session and id == session['akun']:
-    data = col_users.find_one({'_id' : id})
-    return render_template('laman_user.html', data = data)
-  else:
-    return redirect('/')
+    if not is_current_account(id):
+        return redirect(url_for("login"))
 
-@app.route('/user/edit/<id>', methods=['GET', 'POST'])
+    data = user_collection.find_one({"_id": id})
+    if data is None:
+        session.pop("akun", None)
+        return redirect(url_for("login"))
+
+    return render_template("laman_user.html", data=data)
+
+
+@app.route("/user/edit/<id>", methods=["GET", "POST"])
 def user_edit_data(id):
-  if session and id == session['akun']:
-    if request.method == 'POST':
-      col_users.update_one({'_id' : id},
-      {"$set" : {"email" : request.form['email'],
-                 "sandi" : request.form['sandi'],
-                 "username" : request.form['usernm'],
-                 "alamat" : request.form['alamat']
-                 }})
-      return redirect(url_for('user', id = id))
+    if not is_current_account(id):
+        return redirect(url_for("login"))
 
-    return render_template('edit_data_user.html', data = col_users.find_one({'_id' : id}))
-  else:
-    return redirect('/')
+    data = user_collection.find_one({"_id": id})
+    if data is None:
+        session.pop("akun", None)
+        return redirect(url_for("login"))
 
-@app.route('/user/hapus/<id>')
+    if request.method == "POST":
+        user_collection.update_one(
+            {"_id": id},
+            {
+                "$set": {
+                    "email": request.form.get("email", "").strip(),
+                    "sandi": request.form.get("sandi", ""),
+                    "username": request.form.get("usernm", "").strip(),
+                    "alamat": request.form.get("alamat", "").strip(),
+                }
+            },
+        )
+        return redirect(url_for("user", id=id))
+
+    return render_template("edit_data_user.html", data=data)
+
+
+@app.route("/user/hapus/<id>")
 def user_hapus_akun(id):
-  if session and id == session['akun']:
-    col_users.remove({'_id' : id})
-    return redirect(url_for('logout', id = id))
-  else:
-    return redirect('/')
+    if not is_current_account(id):
+        return redirect(url_for("login"))
 
-@app.route('/logout')
+    user_collection.delete_one({"_id": id})
+    session.pop("akun", None)
+    return redirect(url_for("login"))
+
+
+@app.route("/logout")
 def logout():
-  if session:
-    session.pop('akun')
-    return redirect('/')
-  else:
-    return redirect('/')
+    session.pop("akun", None)
+    return redirect(url_for("login"))
 
-#app.run(debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1")
